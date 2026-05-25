@@ -10,9 +10,12 @@
     :root {
       --primary:   #1B2B5E;
       --secondary: #3A7EC6;
-      --accent:    #2563EB;
       --text:      #111827;
       --gray:      #6B7280;
+    }
+
+    html, body {
+      height: 100%;
     }
 
     body {
@@ -24,7 +27,7 @@
       font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
     }
 
-    /* ── Splash-Wrapper ── */
+    /* ── Video ── */
     #splash {
       display: flex;
       align-items: center;
@@ -32,16 +35,18 @@
     }
 
     #logo-video {
-      width: 800px;
-      height: 177px;
-      /* VP9/WebM with alpha – no background needed */
+      /* Originalgröße auf Desktop, skaliert auf Mobile */
+      width: min(800px, 90vw);
+      height: auto;
       transition: opacity 0.8s ease;
+      /* Verhindert schwarzen Hintergrund falls Alpha nicht greift */
+      mix-blend-mode: multiply;
     }
 
     /* ── Login-Karte ── */
     #login-card {
       position: absolute;
-      width: 340px;
+      width: min(340px, 90vw);
       background: #ffffff;
       border-radius: 14px;
       box-shadow: 0 8px 40px rgba(27, 43, 94, 0.13);
@@ -51,17 +56,21 @@
       transition: opacity 0.6s ease;
     }
 
+    @media (max-width: 400px) {
+      #login-card { padding: 32px 24px 28px; }
+    }
+
     #login-card.visible {
       opacity: 1;
       pointer-events: all;
     }
 
-    #login-card .logo-text {
+    .logo-text {
       text-align: center;
       margin-bottom: 28px;
     }
 
-    #login-card .logo-text span {
+    .logo-text span {
       font-size: 0.7rem;
       font-weight: 600;
       letter-spacing: 0.12em;
@@ -77,16 +86,14 @@
       margin-bottom: 6px;
     }
 
-    #login-card .subtitle {
+    .subtitle {
       font-size: 0.8rem;
       color: var(--gray);
       text-align: center;
       margin-bottom: 28px;
     }
 
-    .field {
-      margin-bottom: 16px;
-    }
+    .field { margin-bottom: 16px; }
 
     .field label {
       display: block;
@@ -102,11 +109,13 @@
       padding: 10px 14px;
       border: 1.5px solid #E5E7EB;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 1rem; /* verhindert iOS-Zoom bei <16px */
       color: var(--text);
       background: #F9FAFB;
       outline: none;
       transition: border-color 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
     }
 
     .field input:focus {
@@ -117,19 +126,23 @@
     #login-btn {
       width: 100%;
       margin-top: 8px;
-      padding: 11px;
+      padding: 13px;
       background: var(--primary);
       color: #fff;
       border: none;
       border-radius: 8px;
-      font-size: 0.9rem;
+      font-size: 1rem;
       font-weight: 600;
       cursor: pointer;
       letter-spacing: 0.03em;
       transition: background 0.2s;
+      -webkit-appearance: none;
+      appearance: none;
+      touch-action: manipulation;
     }
 
-    #login-btn:hover { background: var(--secondary); }
+    #login-btn:hover  { background: var(--secondary); }
+    #login-btn:active { background: var(--secondary); opacity: 0.85; }
 
     .divider {
       height: 1px;
@@ -147,29 +160,29 @@
 <body>
 
   <div id="splash">
-    <video id="logo-video" autoplay muted playsinline>
-      <!-- Safari: ProRes 4444 mit Alpha – wird von Chrome ignoriert -->
-      <source src="Material/Text-Teutoplus Logo 3_1_800.mov" type="video/quicktime">
-      <!-- Chrome/Firefox: VP9 mit Alpha -->
-      <source src="Material/Text-Teutoplus Logo 3_1_alpha.webm" type="video/webm">
+    <video id="logo-video" muted playsinline preload="auto">
+      <!-- Safari: HEVC mit Alpha (888 KB) -->
+      <source src="Material/logo_alpha_safari.mov" type="video/mp4; codecs=hvc1">
+      <!-- Chrome / Firefox: VP9 mit Alpha (263 KB) -->
+      <source src="Material/Text-Teutoplus Logo 3_1_alpha.webm" type="video/webm; codecs=vp9">
     </video>
   </div>
 
   <div id="login-card">
-    <div class="logo-text">
-      <span>Mitarbeiterportal</span>
-    </div>
+    <div class="logo-text"><span>Mitarbeiterportal</span></div>
     <h1>Willkommen zurück</h1>
     <p class="subtitle">TeutoPlus Bautrocknung OWL GmbH</p>
 
     <form onsubmit="handleLogin(event)">
       <div class="field">
         <label for="username">Benutzername</label>
-        <input id="username" type="text" placeholder="Vorname Nachname" autocomplete="username" required>
+        <input id="username" type="text" placeholder="Vorname Nachname"
+               autocomplete="username" autocapitalize="words" required>
       </div>
       <div class="field">
         <label for="password">Passwort</label>
-        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+        <input id="password" type="password" placeholder="••••••••"
+               autocomplete="current-password" required>
       </div>
       <button id="login-btn" type="submit">Anmelden</button>
     </form>
@@ -182,35 +195,41 @@
     const video = document.getElementById('logo-video');
     const card  = document.getElementById('login-card');
     let loginShown = false;
+    let fallbackTimer = null;
 
     function showLogin() {
       if (loginShown) return;
       loginShown = true;
+      if (fallbackTimer) clearTimeout(fallbackTimer);
       video.style.opacity = '0';
       setTimeout(() => {
         video.style.display = 'none';
         card.classList.add('visible');
-        document.getElementById('username').focus();
+        // Auf Mobile kein auto-focus (öffnet Tastatur sofort)
+        if (window.innerWidth > 600) {
+          document.getElementById('username').focus();
+        }
       }, 700);
     }
 
-    // Normaler Ablauf: Video fertig
-    video.addEventListener('ended', showLogin);
+    // Video abspielen sobald genug Daten da sind → kein Stottern
+    video.addEventListener('canplaythrough', () => {
+      video.play().catch(() => showLogin());
+    });
 
-    // Safari-Fallback: Video kann nicht abgespielt werden (VP9 nicht unterstützt)
+    video.addEventListener('ended', showLogin);
     video.addEventListener('error', showLogin);
 
-    // Sicherheitsnetz: falls weder ended noch error feuert (z.B. Codec-Stall)
-    const videoDuration = 5.83;
-    const fallbackTimer = setTimeout(showLogin, (videoDuration + 1.5) * 1000);
-    video.addEventListener('ended', () => clearTimeout(fallbackTimer));
+    // Sicherheitsnetz: nach Videolänge + 3s Buffer spätestens Login zeigen
+    video.addEventListener('playing', () => {
+      if (fallbackTimer) clearTimeout(fallbackTimer);
+      fallbackTimer = setTimeout(showLogin, (video.duration || 5.83) * 1000 + 500);
+    });
 
-    // Falls gar kein Format abspielbar → sofort Login zeigen
-    if (!video.canPlayType('video/quicktime') &&
-        !video.canPlayType('video/webm; codecs=vp9')) {
-      clearTimeout(fallbackTimer);
-      showLogin();
-    }
+    // Kein Format unterstützt → direkt Login
+    setTimeout(() => {
+      if (!loginShown && video.readyState === 0) showLogin();
+    }, 3000);
 
     function handleLogin(e) {
       e.preventDefault();
