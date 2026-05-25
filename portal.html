@@ -498,23 +498,23 @@
     o.classList.toggle('visible', open);
   }
 
-  document.addEventListener('DOMContentLoaded', function() {
-    var btn = document.getElementById('menu-toggle');
-    if (!btn) return;
-    var didTouch = false;
+  /* Script läuft am Ende des Body – DOM ist bereits bereit, kein DOMContentLoaded nötig */
+  var _btn = document.getElementById('menu-toggle');
+  if (_btn) {
+    var _didTouch = false;
 
-    btn.addEventListener('touchend', function(e) {
+    _btn.addEventListener('touchend', function(e) {
       e.preventDefault();
-      didTouch = true;
+      _didTouch = true;
       toggleMenu();
-      setTimeout(function() { didTouch = false; }, 400);
+      setTimeout(function() { _didTouch = false; }, 400);
     }, { passive: false });
 
-    btn.addEventListener('click', function() {
-      if (didTouch) return; /* touch hat bereits ausgeführt */
+    _btn.addEventListener('click', function() {
+      if (_didTouch) return;
       toggleMenu();
     });
-  });
+  }
 </script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
