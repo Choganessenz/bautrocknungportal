@@ -43,7 +43,7 @@
       /* Original 800×177 px – auf kleinen Screens proportional schrumpfen */
       width: min(800px, 88vw);
       height: auto;
-      transition: opacity 0.8s ease;
+      transition: opacity 0.4s ease;
     }
 
     /* ── Login-Karte ── */
@@ -56,7 +56,7 @@
       padding: 40px 36px 36px;
       opacity: 0;
       pointer-events: none;
-      transition: opacity 0.6s ease;
+      transition: opacity 0.35s ease;
     }
 
     #login-card.visible {
@@ -215,7 +215,7 @@
         if (window.innerWidth > 600) {
           document.getElementById('username').focus();
         }
-      }, 700);
+      }, 300);
     }
 
     // ── Normaler Ablauf ──
