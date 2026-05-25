@@ -485,6 +485,17 @@
   <div id="sheet-device-list"></div>
 </div>
 
+<script>
+  /* ── Hamburger – eigener Block, vor Leaflet, kein externer Dependency ── */
+  function toggleMenu() {
+    var s = document.getElementById('sidebar');
+    var o = document.getElementById('overlay');
+    if (!s || !o) return;
+    var open = s.classList.toggle('open');
+    o.classList.toggle('visible', open);
+  }
+</script>
+
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   // ── Gerätedaten ──
@@ -609,12 +620,6 @@
   const sidebar     = document.getElementById('sidebar');
   const overlay     = document.getElementById('overlay');
   const bottomSheet = document.getElementById('bottom-sheet');
-
-  // ── Hamburger (global, damit onclick im HTML sicher greift) ──
-  function toggleMenu() {
-    const isOpen = sidebar.classList.toggle('open');
-    overlay.classList.toggle('visible', isOpen);
-  }
 
   // Overlay-Klick schließt alles
   overlay.addEventListener('click', () => {
