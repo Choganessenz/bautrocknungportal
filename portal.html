@@ -2,9 +2,17 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <!-- user-scalable=no: verhindert Browser-Pinch-Zoom, Karte übernimmt Gesten -->
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TeutoPlus – GPS Gerätetracking</title>
+  <!-- Hamburger: im head, vor allem, onclick-Attribut ruft dies direkt auf -->
+  <script>
+    function toggleMenu() {
+      document.documentElement.classList.toggle('sidebar-open');
+    }
+    function closeMenu() {
+      document.documentElement.classList.remove('sidebar-open');
+    }
+  </script>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -142,7 +150,6 @@
 
     @media (max-width: 768px) {
       #sidebar {
-        /* absolute statt fixed: kein iOS-Bug mit overflow:hidden auf body */
         position: absolute;
         top: 0;
         left: -260px;
@@ -151,7 +158,8 @@
         transition: left 0.25s ease;
         box-shadow: 4px 0 20px rgba(0,0,0,0.18);
       }
-      #sidebar.open { left: 0; }
+      html.sidebar-open #sidebar { left: 0; }
+      html.sidebar-open #overlay { display: block; }
     }
 
     .sidebar-section { padding: 18px 14px 8px; }
@@ -352,7 +360,7 @@
 <!-- Topbar -->
 <div id="topbar">
   <div class="topbar-left">
-    <button id="menu-toggle" aria-label="Menü öffnen">
+    <button id="menu-toggle" onclick="toggleMenu()" aria-label="Menü öffnen">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
         <line x1="3" y1="6"  x2="21" y2="6"/>
         <line x1="3" y1="12" x2="21" y2="12"/>
@@ -487,17 +495,6 @@
   <div id="sheet-device-list"></div>
 </div>
 
-<script>
-  function toggleMenu() {
-    var s = document.getElementById('sidebar');
-    var o = document.getElementById('overlay');
-    var open = s.classList.toggle('open');
-    o.classList.toggle('visible', open);
-  }
-
-  document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
-</script>
-
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <script>
   // ── Gerätedaten ──
@@ -625,17 +622,13 @@
 
   // Overlay-Klick schließt alles
   overlay.addEventListener('click', () => {
-    sidebar.classList.remove('open');
+    closeMenu();
     bottomSheet.classList.remove('open');
-    overlay.classList.remove('visible');
   });
 
   // Nav-Item schließt Sidebar
   sidebar.querySelectorAll('.nav-item, .logout-btn').forEach(el => {
-    el.addEventListener('click', () => {
-      sidebar.classList.remove('open');
-      overlay.classList.remove('visible');
-    });
+    el.addEventListener('click', closeMenu);
   });
 
   // ── Bottom Sheet ──
