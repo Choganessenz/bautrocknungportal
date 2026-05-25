@@ -117,12 +117,11 @@
       position: relative;
     }
 
-    /* ══ OVERLAY (Mobile Sidebar-Hintergrund) ══ */
+    /* ══ OVERLAY ══ */
     #overlay {
       display: none;
-      position: fixed;
-      top: 54px; /* hardcoded = --topbar-h, CSS-Variablen lösen sich in fixed nicht immer auf */
-      right: 0; bottom: 0; left: 0;
+      position: absolute;
+      inset: 0;
       background: rgba(0,0,0,0.4);
       z-index: 200;
     }
@@ -143,14 +142,14 @@
 
     @media (max-width: 768px) {
       #sidebar {
-        /* left statt transform: iOS-Bug mit position:fixed + transform vermieden */
-        position: fixed;
-        top: 54px;
+        /* absolute statt fixed: kein iOS-Bug mit overflow:hidden auf body */
+        position: absolute;
+        top: 0;
         left: -260px;
         bottom: 0;
         width: 260px;
         transition: left 0.25s ease;
-        box-shadow: 4px 0 16px rgba(0,0,0,0.15);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.18);
       }
       #sidebar.open { left: 0; }
     }
@@ -489,32 +488,14 @@
 </div>
 
 <script>
-  /* ── Hamburger – eigener Block, vor Leaflet, kein Dependency ── */
   function toggleMenu() {
     var s = document.getElementById('sidebar');
     var o = document.getElementById('overlay');
-    if (!s || !o) return;
     var open = s.classList.toggle('open');
     o.classList.toggle('visible', open);
   }
 
-  /* Script läuft am Ende des Body – DOM ist bereits bereit, kein DOMContentLoaded nötig */
-  var _btn = document.getElementById('menu-toggle');
-  if (_btn) {
-    var _didTouch = false;
-
-    _btn.addEventListener('touchend', function(e) {
-      e.preventDefault();
-      _didTouch = true;
-      toggleMenu();
-      setTimeout(function() { _didTouch = false; }, 400);
-    }, { passive: false });
-
-    _btn.addEventListener('click', function() {
-      if (_didTouch) return;
-      toggleMenu();
-    });
-  }
+  document.getElementById('menu-toggle').addEventListener('click', toggleMenu);
 </script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
