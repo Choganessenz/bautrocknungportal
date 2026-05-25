@@ -1,0 +1,12 @@
+{
+  "headers": [
+    {
+      "source": "/Material/(.*)\\.mov",
+      "headers": [{ "key": "Content-Type", "value": "video/quicktime" }]
+    },
+    {
+      "source": "/Material/(.*)\\.webm",
+      "headers": [{ "key": "Content-Type", "value": "video/webm" }]
+    }
+  ]
+}

@@ -19,8 +19,8 @@
     }
 
     body {
-      min-height: 100vh;
-      background: #ffffff;
+      min-height: 100dvh;
+      background: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -35,19 +35,17 @@
     }
 
     #logo-video {
-      /* Originalgröße auf Desktop, skaliert auf Mobile */
-      width: min(800px, 90vw);
+      /* Original 800×177 px – auf kleinen Screens proportional schrumpfen */
+      width: min(800px, 88vw);
       height: auto;
       transition: opacity 0.8s ease;
-      /* Verhindert schwarzen Hintergrund falls Alpha nicht greift */
-      mix-blend-mode: multiply;
     }
 
     /* ── Login-Karte ── */
     #login-card {
       position: absolute;
-      width: min(340px, 90vw);
-      background: #ffffff;
+      width: min(340px, 88vw);
+      background: #fff;
       border-radius: 14px;
       box-shadow: 0 8px 40px rgba(27, 43, 94, 0.13);
       padding: 40px 36px 36px;
@@ -56,13 +54,13 @@
       transition: opacity 0.6s ease;
     }
 
-    @media (max-width: 400px) {
-      #login-card { padding: 32px 24px 28px; }
-    }
-
     #login-card.visible {
       opacity: 1;
       pointer-events: all;
+    }
+
+    @media (max-width: 400px) {
+      #login-card { padding: 30px 22px 26px; }
     }
 
     .logo-text {
@@ -71,15 +69,15 @@
     }
 
     .logo-text span {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 600;
-      letter-spacing: 0.12em;
+      letter-spacing: 0.14em;
       text-transform: uppercase;
       color: var(--gray);
     }
 
     #login-card h1 {
-      font-size: 1.25rem;
+      font-size: 1.2rem;
       font-weight: 700;
       color: var(--primary);
       text-align: center;
@@ -87,17 +85,18 @@
     }
 
     .subtitle {
-      font-size: 0.8rem;
+      font-size: 0.78rem;
       color: var(--gray);
       text-align: center;
       margin-bottom: 28px;
+      line-height: 1.4;
     }
 
-    .field { margin-bottom: 16px; }
+    .field { margin-bottom: 15px; }
 
     .field label {
       display: block;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
       color: var(--primary);
       margin-bottom: 6px;
@@ -106,16 +105,16 @@
 
     .field input {
       width: 100%;
-      padding: 10px 14px;
+      padding: 12px 14px;
       border: 1.5px solid #E5E7EB;
       border-radius: 8px;
-      font-size: 1rem; /* verhindert iOS-Zoom bei <16px */
+      font-size: 16px; /* 16px verhindert Auto-Zoom auf iOS */
       color: var(--text);
       background: #F9FAFB;
       outline: none;
       transition: border-color 0.2s;
-      -webkit-appearance: none;
       appearance: none;
+      -webkit-appearance: none;
     }
 
     .field input:focus {
@@ -126,7 +125,7 @@
     #login-btn {
       width: 100%;
       margin-top: 8px;
-      padding: 13px;
+      padding: 14px;
       background: var(--primary);
       color: #fff;
       border: none;
@@ -136,22 +135,22 @@
       cursor: pointer;
       letter-spacing: 0.03em;
       transition: background 0.2s;
-      -webkit-appearance: none;
       appearance: none;
+      -webkit-appearance: none;
       touch-action: manipulation;
     }
 
     #login-btn:hover  { background: var(--secondary); }
-    #login-btn:active { background: var(--secondary); opacity: 0.85; }
+    #login-btn:active { opacity: 0.85; }
 
     .divider {
       height: 1px;
       background: #E5E7EB;
-      margin: 22px 0 18px;
+      margin: 20px 0 16px;
     }
 
     .footer-note {
-      font-size: 0.72rem;
+      font-size: 0.7rem;
       color: var(--gray);
       text-align: center;
     }
@@ -160,10 +159,14 @@
 <body>
 
   <div id="splash">
-    <video id="logo-video" muted playsinline preload="auto">
-      <!-- Safari: HEVC mit Alpha (888 KB) -->
-      <source src="Material/logo_alpha_safari.mov" type="video/mp4; codecs=hvc1">
-      <!-- Chrome / Firefox: VP9 mit Alpha (263 KB) -->
+    <!--
+      autoplay + muted + playsinline = iOS-Autoplay erlaubt
+      preload=auto = so früh wie möglich laden
+    -->
+    <video id="logo-video" autoplay muted playsinline preload="auto">
+      <!-- Safari / iOS: HEVC mit Alpha -->
+      <source src="Material/logo_alpha_safari.mov" type="video/quicktime">
+      <!-- Chrome / Firefox / Android: VP9 mit Alpha -->
       <source src="Material/Text-Teutoplus Logo 3_1_alpha.webm" type="video/webm; codecs=vp9">
     </video>
   </div>
@@ -194,42 +197,43 @@
   <script>
     const video = document.getElementById('logo-video');
     const card  = document.getElementById('login-card');
-    let loginShown = false;
-    let fallbackTimer = null;
+    let done = false;
 
     function showLogin() {
-      if (loginShown) return;
-      loginShown = true;
-      if (fallbackTimer) clearTimeout(fallbackTimer);
+      if (done) return;
+      done = true;
       video.style.opacity = '0';
       setTimeout(() => {
         video.style.display = 'none';
         card.classList.add('visible');
-        // Auf Mobile kein auto-focus (öffnet Tastatur sofort)
+        // Kein Auto-Focus auf Mobile (öffnet Tastatur)
         if (window.innerWidth > 600) {
           document.getElementById('username').focus();
         }
       }, 700);
     }
 
-    // Video abspielen sobald genug Daten da sind → kein Stottern
-    video.addEventListener('canplaythrough', () => {
-      video.play().catch(() => showLogin());
-    });
-
+    // ── Normaler Ablauf ──
     video.addEventListener('ended', showLogin);
-    video.addEventListener('error', showLogin);
 
-    // Sicherheitsnetz: nach Videolänge + 3s Buffer spätestens Login zeigen
-    video.addEventListener('playing', () => {
-      if (fallbackTimer) clearTimeout(fallbackTimer);
-      fallbackTimer = setTimeout(showLogin, (video.duration || 5.83) * 1000 + 500);
+    // ── Fehler beim Laden oder Abspielen ──
+    video.addEventListener('error', () => setTimeout(showLogin, 300));
+
+    // ── Fallback A: Video startet nicht innerhalb 4 Sekunden ──
+    // (tritt auf wenn kein Codec unterstützt wird oder Netz zu langsam)
+    const shortFallback = setTimeout(showLogin, 4000);
+
+    // Fallback löschen sobald Video tatsächlich läuft
+    video.addEventListener('timeupdate', function cancelFallback() {
+      if (video.currentTime > 0.2) {
+        clearTimeout(shortFallback);
+        video.removeEventListener('timeupdate', cancelFallback);
+      }
     });
 
-    // Kein Format unterstützt → direkt Login
-    setTimeout(() => {
-      if (!loginShown && video.readyState === 0) showLogin();
-    }, 3000);
+    // ── Fallback B: Maximale Wartezeit ──
+    // Falls Video hängt oder extrem langsam – nach 10s immer anzeigen
+    setTimeout(showLogin, 10000);
 
     function handleLogin(e) {
       e.preventDefault();
