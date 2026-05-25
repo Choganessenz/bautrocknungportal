@@ -300,7 +300,14 @@
     .badge-online  { background: #DCFCE7; color: #15803D; }
     .badge-offline { background: #F3F4F6; color: #6B7280; }
     .badge-warning { background: #FEF3C7; color: #B45309; }
-    .leaflet-control-attribution { font-size: 0.6rem !important; }
+    .leaflet-control-attribution {
+      font-size: 0.55rem !important;
+      opacity: 0.45;
+      background: transparent !important;
+      box-shadow: none !important;
+      padding: 1px 4px !important;
+    }
+    .leaflet-control-attribution a { color: inherit !important; }
   </style>
 </head>
 <body>
@@ -487,6 +494,7 @@
     attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
     maxZoom: 19
   }).addTo(map);
+  map.attributionControl.setPrefix('');
 
   function makeIcon(status) {
     const color = { online:'#22C55E', warning:'#F59E0B', offline:'#9CA3AF' }[status] || '#9CA3AF';
