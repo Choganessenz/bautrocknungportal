@@ -14,12 +14,17 @@
       --gray:      #6B7280;
     }
 
-    html, body {
+    html {
       height: 100%;
+      overflow: hidden;
     }
 
     body {
-      min-height: 100dvh;
+      height: 100%;
+      overflow: hidden;
+      /* iOS: verhindert Bounce-Scroll / Overscroll */
+      position: fixed;
+      width: 100%;
       background: #fff;
       display: flex;
       align-items: center;

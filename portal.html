@@ -2,7 +2,8 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <!-- user-scalable=no: verhindert Browser-Pinch-Zoom, Karte übernimmt Gesten -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>TeutoPlus – GPS Gerätetracking</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
@@ -118,7 +119,8 @@
     #overlay {
       display: none;
       position: fixed;
-      inset: var(--topbar-h) 0 0 0;
+      top: 54px; /* hardcoded = --topbar-h, CSS-Variablen lösen sich in fixed nicht immer auf */
+      right: 0; bottom: 0; left: 0;
       background: rgba(0,0,0,0.4);
       z-index: 200;
     }
@@ -141,10 +143,11 @@
     @media (max-width: 768px) {
       #sidebar {
         position: fixed;
-        top: var(--topbar-h);
+        top: 54px; /* hardcoded = --topbar-h */
         left: 0;
         bottom: 0;
         transform: translateX(-100%);
+        width: 260px;
       }
       #sidebar.open { transform: translateX(0); }
     }
@@ -347,7 +350,7 @@
 <!-- Topbar -->
 <div id="topbar">
   <div class="topbar-left">
-    <button id="menu-toggle" aria-label="Menü öffnen">
+    <button id="menu-toggle" onclick="toggleMenu()" aria-label="Menü öffnen">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
         <line x1="3" y1="6"  x2="21" y2="6"/>
         <line x1="3" y1="12" x2="21" y2="12"/>
@@ -602,22 +605,25 @@
     });
   }, 4000);
 
-  // ── Sidebar Toggle (Mobile) ──
-  const sidebar  = document.getElementById('sidebar');
-  const overlay  = document.getElementById('overlay');
+  // ── Referenzen ──
+  const sidebar     = document.getElementById('sidebar');
+  const overlay     = document.getElementById('overlay');
+  const bottomSheet = document.getElementById('bottom-sheet');
 
-  document.getElementById('menu-toggle').addEventListener('click', () => {
-    sidebar.classList.toggle('open');
-    overlay.classList.toggle('visible');
-  });
+  // ── Hamburger (global, damit onclick im HTML sicher greift) ──
+  function toggleMenu() {
+    const isOpen = sidebar.classList.toggle('open');
+    overlay.classList.toggle('visible', isOpen);
+  }
 
+  // Overlay-Klick schließt alles
   overlay.addEventListener('click', () => {
     sidebar.classList.remove('open');
+    bottomSheet.classList.remove('open');
     overlay.classList.remove('visible');
-    closeBottomSheet();
   });
 
-  // Klick auf Nav-Item schließt Sidebar auf Mobile
+  // Nav-Item schließt Sidebar
   sidebar.querySelectorAll('.nav-item, .logout-btn').forEach(el => {
     el.addEventListener('click', () => {
       sidebar.classList.remove('open');
@@ -625,9 +631,7 @@
     });
   });
 
-  // ── Bottom Sheet (Mobile Geräteliste) ──
-  const bottomSheet = document.getElementById('bottom-sheet');
-
+  // ── Bottom Sheet ──
   document.getElementById('devices-fab').addEventListener('click', () => {
     bottomSheet.classList.add('open');
     overlay.classList.add('visible');
@@ -637,10 +641,14 @@
 
   function closeBottomSheet() {
     bottomSheet.classList.remove('open');
-    if (!sidebar.classList.contains('open')) {
-      overlay.classList.remove('visible');
-    }
+    if (!sidebar.classList.contains('open')) overlay.classList.remove('visible');
   }
+
+  // ── Karten-Pinch-Zoom: Browser-Zoom unterdrücken ──
+  // (user-scalable=no im Viewport reicht auf manchen Geräten nicht)
+  document.addEventListener('touchmove', (e) => {
+    if (e.touches.length > 1) e.preventDefault();
+  }, { passive: false });
 </script>
 </body>
 </html>
