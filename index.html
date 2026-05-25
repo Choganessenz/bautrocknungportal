@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeutoPlus – Mitarbeiterportal</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:   #1B2B5E;
+      --secondary: #3A7EC6;
+      --accent:    #2563EB;
+      --text:      #111827;
+      --gray:      #6B7280;
+    }
+
+    body {
+      min-height: 100vh;
+      background: #ffffff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+    }
+
+    /* ── Splash-Wrapper ── */
+    #splash {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    #logo-video {
+      width: 800px;
+      height: 177px;
+      /* VP9/WebM with alpha – no background needed */
+      transition: opacity 0.8s ease;
+    }
+
+    /* ── Login-Karte ── */
+    #login-card {
+      position: absolute;
+      width: 340px;
+      background: #ffffff;
+      border-radius: 14px;
+      box-shadow: 0 8px 40px rgba(27, 43, 94, 0.13);
+      padding: 40px 36px 36px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.6s ease;
+    }
+
+    #login-card.visible {
+      opacity: 1;
+      pointer-events: all;
+    }
+
+    #login-card .logo-text {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    #login-card .logo-text span {
+      font-size: 0.7rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--gray);
+    }
+
+    #login-card h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      color: var(--primary);
+      text-align: center;
+      margin-bottom: 6px;
+    }
+
+    #login-card .subtitle {
+      font-size: 0.8rem;
+      color: var(--gray);
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--primary);
+      margin-bottom: 6px;
+      letter-spacing: 0.03em;
+    }
+
+    .field input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 1.5px solid #E5E7EB;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      color: var(--text);
+      background: #F9FAFB;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .field input:focus {
+      border-color: var(--secondary);
+      background: #fff;
+    }
+
+    #login-btn {
+      width: 100%;
+      margin-top: 8px;
+      padding: 11px;
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      cursor: pointer;
+      letter-spacing: 0.03em;
+      transition: background 0.2s;
+    }
+
+    #login-btn:hover { background: var(--secondary); }
+
+    .divider {
+      height: 1px;
+      background: #E5E7EB;
+      margin: 22px 0 18px;
+    }
+
+    .footer-note {
+      font-size: 0.72rem;
+      color: var(--gray);
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="splash">
+    <video id="logo-video" autoplay muted playsinline>
+      <!-- Safari: ProRes 4444 mit Alpha – wird von Chrome ignoriert -->
+      <source src="Material/Text-Teutoplus Logo 3_1_800.mov" type="video/quicktime">
+      <!-- Chrome/Firefox: VP9 mit Alpha -->
+      <source src="Material/Text-Teutoplus Logo 3_1_alpha.webm" type="video/webm">
+    </video>
+  </div>
+
+  <div id="login-card">
+    <div class="logo-text">
+      <span>Mitarbeiterportal</span>
+    </div>
+    <h1>Willkommen zurück</h1>
+    <p class="subtitle">TeutoPlus Bautrocknung OWL GmbH</p>
+
+    <form onsubmit="handleLogin(event)">
+      <div class="field">
+        <label for="username">Benutzername</label>
+        <input id="username" type="text" placeholder="Vorname Nachname" autocomplete="username" required>
+      </div>
+      <div class="field">
+        <label for="password">Passwort</label>
+        <input id="password" type="password" placeholder="••••••••" autocomplete="current-password" required>
+      </div>
+      <button id="login-btn" type="submit">Anmelden</button>
+    </form>
+
+    <div class="divider"></div>
+    <p class="footer-note">Nur für autorisierte Mitarbeiter</p>
+  </div>
+
+  <script>
+    const video = document.getElementById('logo-video');
+    const card  = document.getElementById('login-card');
+    let loginShown = false;
+
+    function showLogin() {
+      if (loginShown) return;
+      loginShown = true;
+      video.style.opacity = '0';
+      setTimeout(() => {
+        video.style.display = 'none';
+        card.classList.add('visible');
+        document.getElementById('username').focus();
+      }, 700);
+    }
+
+    // Normaler Ablauf: Video fertig
+    video.addEventListener('ended', showLogin);
+
+    // Safari-Fallback: Video kann nicht abgespielt werden (VP9 nicht unterstützt)
+    video.addEventListener('error', showLogin);
+
+    // Sicherheitsnetz: falls weder ended noch error feuert (z.B. Codec-Stall)
+    const videoDuration = 5.83;
+    const fallbackTimer = setTimeout(showLogin, (videoDuration + 1.5) * 1000);
+    video.addEventListener('ended', () => clearTimeout(fallbackTimer));
+
+    // Falls gar kein Format abspielbar → sofort Login zeigen
+    if (!video.canPlayType('video/quicktime') &&
+        !video.canPlayType('video/webm; codecs=vp9')) {
+      clearTimeout(fallbackTimer);
+      showLogin();
+    }
+
+    function handleLogin(e) {
+      e.preventDefault();
+      const btn = document.getElementById('login-btn');
+      btn.textContent = 'Laden…';
+      btn.disabled = true;
+      setTimeout(() => { window.location.href = 'portal.html'; }, 600);
+    }
+  </script>
+</body>
+</html>

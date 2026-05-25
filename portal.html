@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TeutoPlus – GPS Gerätetracking</title>
+
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --primary:       #1B2B5E;
+      --primary-light: #243674;
+      --secondary:     #3A7EC6;
+      --accent:        #2563EB;
+      --text:          #111827;
+      --gray:          #6B7280;
+      --gray-light:    #F3F4F6;
+      --border:        #E5E7EB;
+      --sidebar-w:     260px;
+      --topbar-h:      56px;
+    }
+
+    body {
+      font-family: system-ui, -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--gray-light);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* ── Topbar ── */
+    #topbar {
+      height: var(--topbar-h);
+      background: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      z-index: 100;
+    }
+
+    #topbar .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #topbar .brand-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #22C55E;
+      box-shadow: 0 0 0 3px rgba(34,197,94,0.25);
+      animation: pulse 2s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { box-shadow: 0 0 0 3px rgba(34,197,94,0.25); }
+      50%       { box-shadow: 0 0 0 6px rgba(34,197,94,0.1); }
+    }
+
+    #topbar .brand-name {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
+    #topbar .brand-sub {
+      font-size: 0.7rem;
+      color: rgba(255,255,255,0.55);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    #topbar .top-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    #topbar .live-badge {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.35);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      color: #22C55E;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    #topbar .live-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #22C55E;
+      animation: blink 1.2s infinite;
+    }
+
+    @keyframes blink {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.2; }
+    }
+
+    .user-avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--secondary);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+
+    /* ── Layout ── */
+    #layout {
+      display: flex;
+      flex: 1;
+      overflow: hidden;
+    }
+
+    /* ── Sidebar ── */
+    #sidebar {
+      width: var(--sidebar-w);
+      background: #fff;
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .sidebar-section {
+      padding: 20px 16px 8px;
+    }
+
+    .sidebar-label {
+      font-size: 0.65rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 8px;
+      padding-left: 8px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--gray);
+      transition: background 0.15s, color 0.15s;
+      margin-bottom: 2px;
+      text-decoration: none;
+    }
+
+    .nav-item:hover { background: var(--gray-light); color: var(--text); }
+
+    .nav-item.active {
+      background: rgba(27,43,94,0.07);
+      color: var(--primary);
+      font-weight: 600;
+    }
+
+    .nav-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .nav-item.active .nav-icon { opacity: 1; }
+
+    .sidebar-spacer { flex: 1; }
+
+    .sidebar-footer {
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.8rem;
+      color: var(--gray);
+      cursor: pointer;
+      padding: 8px;
+      border-radius: 8px;
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .logout-btn:hover { color: #DC2626; background: #FEF2F2; }
+
+    /* ── Devices Panel ── */
+    #devices-panel {
+      width: 220px;
+      background: #fff;
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      flex-shrink: 0;
+    }
+
+    .panel-header {
+      padding: 16px 16px 10px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: #fff;
+      z-index: 1;
+    }
+
+    .panel-header h2 {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+    }
+
+    .panel-header p {
+      font-size: 0.72rem;
+      color: var(--gray);
+      margin-top: 2px;
+    }
+
+    .device-card {
+      padding: 12px 16px;
+      border-bottom: 1px solid #F3F4F6;
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .device-card:hover { background: var(--gray-light); }
+    .device-card.selected { background: rgba(27,43,94,0.06); }
+
+    .device-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 4px;
+    }
+
+    .device-name {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text);
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      flex-shrink: 0;
+    }
+
+    .status-dot.online  { background: #22C55E; }
+    .status-dot.offline { background: #9CA3AF; }
+    .status-dot.warning { background: #F59E0B; }
+
+    .device-type {
+      font-size: 0.7rem;
+      color: var(--gray);
+    }
+
+    .device-location {
+      font-size: 0.7rem;
+      color: var(--secondary);
+      margin-top: 3px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ── Map Area ── */
+    #map-area {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+    }
+
+    #map {
+      width: 100%;
+      height: 100%;
+    }
+
+    /* ── Map Overlay Stats ── */
+    .map-stats {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 500;
+    }
+
+    .stat-card {
+      background: rgba(255,255,255,0.96);
+      border-radius: 10px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.10);
+      min-width: 140px;
+    }
+
+    .stat-card .stat-label {
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--gray);
+      margin-bottom: 4px;
+    }
+
+    .stat-card .stat-value {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--primary);
+      line-height: 1;
+    }
+
+    .stat-card .stat-sub {
+      font-size: 0.68rem;
+      color: var(--gray);
+      margin-top: 3px;
+    }
+
+    .stat-card .stat-value.green  { color: #16A34A; }
+    .stat-card .stat-value.orange { color: #D97706; }
+
+    /* ── Custom Popup ── */
+    .leaflet-popup-content-wrapper {
+      border-radius: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+      padding: 0;
+    }
+
+    .leaflet-popup-content {
+      margin: 0;
+      min-width: 200px;
+    }
+
+    .popup-inner {
+      padding: 14px 16px;
+    }
+
+    .popup-title {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary);
+      margin-bottom: 8px;
+    }
+
+    .popup-row {
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.75rem;
+      margin-bottom: 4px;
+      color: var(--text);
+    }
+
+    .popup-row span:first-child { color: var(--gray); }
+
+    .popup-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+
+    .badge-online  { background: #DCFCE7; color: #15803D; }
+    .badge-offline { background: #F3F4F6; color: #6B7280; }
+    .badge-warning { background: #FEF3C7; color: #B45309; }
+
+    /* Leaflet tile attribution kleiner */
+    .leaflet-control-attribution {
+      font-size: 0.6rem !important;
+    }
+  </style>
+</head>
+<body>
+
+<!-- Topbar -->
+<div id="topbar">
+  <div class="brand">
+    <div class="brand-dot"></div>
+    <div>
+      <div class="brand-name">TeutoPlus</div>
+      <div class="brand-sub">Mitarbeiterportal</div>
+    </div>
+  </div>
+  <div class="top-right">
+    <div class="live-badge">
+      <div class="live-dot"></div>
+      Live
+    </div>
+    <div class="user-avatar">MA</div>
+  </div>
+</div>
+
+<!-- Layout -->
+<div id="layout">
+
+  <!-- Sidebar -->
+  <nav id="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Navigation</div>
+
+      <a class="nav-item active" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+          <circle cx="12" cy="9" r="2.5"/>
+        </svg>
+        GPS Tracking
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="2" y="3" width="20" height="14" rx="2"/>
+          <path d="M8 21h8M12 17v4"/>
+        </svg>
+        Geräte
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 11l3 3L22 4"/>
+          <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11"/>
+        </svg>
+        Aufträge
+      </a>
+
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+          <circle cx="9" cy="7" r="4"/>
+          <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+        </svg>
+        Mitarbeiter
+      </a>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Berichte</div>
+      <a class="nav-item" href="#">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+          <line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+        Auswertungen
+      </a>
+    </div>
+
+    <div class="sidebar-spacer"></div>
+
+    <div class="sidebar-footer">
+      <a class="logout-btn" href="index.html">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
+          <polyline points="16 17 21 12 16 7"/>
+          <line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        Abmelden
+      </a>
+    </div>
+  </nav>
+
+  <!-- Devices Panel -->
+  <div id="devices-panel">
+    <div class="panel-header">
+      <h2>Geräte</h2>
+      <p id="online-count">8 von 11 online</p>
+    </div>
+    <div id="device-list"></div>
+  </div>
+
+  <!-- Map -->
+  <div id="map-area">
+    <div id="map"></div>
+    <div class="map-stats">
+      <div class="stat-card">
+        <div class="stat-label">Aktive Geräte</div>
+        <div class="stat-value green">8</div>
+        <div class="stat-sub">von 11 gesamt</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Inaktiv</div>
+        <div class="stat-value orange">3</div>
+        <div class="stat-sub">seit > 30 Min</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+  // ── Gerätedaten (fiktiv, Paderborn/OWL-Region) ──
+  const devices = [
+    {
+      id: 'TP-001', name: 'Luftentfeuchter TTK-355', type: 'Luftentfeuchter',
+      status: 'online', lat: 51.7189, lng: 8.7575,
+      address: 'Bahnhofstr. 12, Paderborn', battery: 87, lastSeen: 'vor 2 Min'
+    },
+    {
+      id: 'TP-002', name: 'Luftentfeuchter TTK-170', type: 'Luftentfeuchter',
+      status: 'online', lat: 51.7250, lng: 8.7650,
+      address: 'Marienplatz 5, Paderborn', battery: 62, lastSeen: 'vor 1 Min'
+    },
+    {
+      id: 'TP-003', name: 'Kondensations-TK 105', type: 'Trockner',
+      status: 'online', lat: 51.7100, lng: 8.7800,
+      address: 'Detmolder Str. 88, Paderborn', battery: 91, lastSeen: 'vor 4 Min'
+    },
+    {
+      id: 'TP-004', name: 'Fixtron DV-50', type: 'Trockner',
+      status: 'warning', lat: 51.7320, lng: 8.7480,
+      address: 'Westernstr. 22, Paderborn', battery: 18, lastSeen: 'vor 8 Min'
+    },
+    {
+      id: 'TP-005', name: 'Luftentfeuchter Qube', type: 'Luftentfeuchter',
+      status: 'online', lat: 51.7055, lng: 8.7650,
+      address: 'Riemekestr. 4, Paderborn', battery: 74, lastSeen: 'vor 3 Min'
+    },
+    {
+      id: 'TP-006', name: 'Trockner TTK-75 ECO', type: 'Trockner',
+      status: 'offline', lat: 51.8500, lng: 8.7400,
+      address: 'Lippstr. 9, Detmold', battery: 0, lastSeen: 'vor 2 Std'
+    },
+    {
+      id: 'TP-007', name: 'Luftentfeuchter TTK-355', type: 'Luftentfeuchter',
+      status: 'online', lat: 51.9800, lng: 8.5300,
+      address: 'Artur-Ladebeck-Str. 60, Bielefeld', battery: 55, lastSeen: 'vor 5 Min'
+    },
+    {
+      id: 'TP-008', name: 'Kondensations-TK 105', type: 'Trockner',
+      status: 'online', lat: 51.9700, lng: 8.5650,
+      address: 'Herforder Str. 100, Bielefeld', battery: 80, lastSeen: 'vor 2 Min'
+    },
+    {
+      id: 'TP-009', name: 'Fixtron DV-50', type: 'Trockner',
+      status: 'offline', lat: 52.0300, lng: 8.5200,
+      address: 'Ravensberger Str. 15, Bielefeld', battery: 0, lastSeen: 'vor 4 Std'
+    },
+    {
+      id: 'TP-010', name: 'Trockner TTK-75 ECO', type: 'Trockner',
+      status: 'online', lat: 51.7600, lng: 8.8900,
+      address: 'Lippstädter Str. 33, Salzkotten', battery: 66, lastSeen: 'vor 6 Min'
+    },
+    {
+      id: 'TP-011', name: 'Luftentfeuchter Qube', type: 'Luftentfeuchter',
+      status: 'offline', lat: 51.8100, lng: 8.6300,
+      address: 'Teutoburger Weg 7, Schlangen', battery: 0, lastSeen: 'vor 1 Std'
+    },
+  ];
+
+  // ── Karte initialisieren ──
+  const map = L.map('map', { zoomControl: true }).setView([51.82, 8.72], 10);
+
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    maxZoom: 19
+  }).addTo(map);
+
+  // ── Custom Marker-Icons ──
+  function makeIcon(status) {
+    const colors = { online: '#22C55E', warning: '#F59E0B', offline: '#9CA3AF' };
+    const color  = colors[status] || '#9CA3AF';
+    const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 42" width="32" height="42">
+      <path d="M16 2C9.37 2 4 7.37 4 14c0 9.5 12 26 12 26s12-16.5 12-26c0-6.63-5.37-12-12-12z"
+            fill="${color}" stroke="white" stroke-width="2.5"/>
+      <circle cx="16" cy="14" r="5" fill="white"/>
+    </svg>`;
+    return L.divIcon({
+      html: svg,
+      iconSize: [32, 42],
+      iconAnchor: [16, 42],
+      popupAnchor: [0, -44],
+      className: ''
+    });
+  }
+
+  // ── Gerätekarten & Marker ──
+  const deviceList = document.getElementById('device-list');
+  let selectedId = null;
+  const markersMap = {};
+
+  devices.forEach(d => {
+    // Sidebar-Karte
+    const card = document.createElement('div');
+    card.className = 'device-card';
+    card.id = 'card-' + d.id;
+    card.innerHTML = `
+      <div class="device-header">
+        <span class="device-name">${d.id}</span>
+        <span class="status-dot ${d.status}"></span>
+      </div>
+      <div class="device-type">${d.name}</div>
+      <div class="device-location">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+        </svg>
+        ${d.address.split(',')[0]}
+      </div>
+    `;
+    card.addEventListener('click', () => selectDevice(d.id));
+    deviceList.appendChild(card);
+
+    // Marker
+    const marker = L.marker([d.lat, d.lng], { icon: makeIcon(d.status) }).addTo(map);
+    const badgeClass = d.status === 'online' ? 'badge-online' : d.status === 'warning' ? 'badge-warning' : 'badge-offline';
+    const statusText = d.status === 'online' ? 'Online' : d.status === 'warning' ? 'Warnung' : 'Offline';
+    marker.bindPopup(`
+      <div class="popup-inner">
+        <div class="popup-title">${d.name}</div>
+        <div class="popup-row">
+          <span>Geräte-ID</span>
+          <span><strong>${d.id}</strong></span>
+        </div>
+        <div class="popup-row">
+          <span>Status</span>
+          <span><span class="popup-badge ${badgeClass}">${statusText}</span></span>
+        </div>
+        <div class="popup-row">
+          <span>Adresse</span>
+          <span>${d.address}</span>
+        </div>
+        <div class="popup-row">
+          <span>Akku</span>
+          <span>${d.battery > 0 ? d.battery + '%' : '—'}</span>
+        </div>
+        <div class="popup-row">
+          <span>Zuletzt</span>
+          <span>${d.lastSeen}</span>
+        </div>
+      </div>
+    `);
+    marker.on('click', () => selectDevice(d.id));
+    markersMap[d.id] = marker;
+  });
+
+  function selectDevice(id) {
+    if (selectedId) {
+      document.getElementById('card-' + selectedId)?.classList.remove('selected');
+    }
+    selectedId = id;
+    document.getElementById('card-' + id)?.classList.add('selected');
+    document.getElementById('card-' + id)?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+
+    const d = devices.find(x => x.id === id);
+    if (d) {
+      map.setView([d.lat, d.lng], 14, { animate: true });
+      markersMap[id].openPopup();
+    }
+  }
+
+  // ── Simulated Live-Updates (Positionen leicht verschieben) ──
+  setInterval(() => {
+    devices.filter(d => d.status === 'online').forEach(d => {
+      d.lat += (Math.random() - 0.5) * 0.0005;
+      d.lng += (Math.random() - 0.5) * 0.0005;
+      markersMap[d.id].setLatLng([d.lat, d.lng]);
+    });
+  }, 4000);
+</script>
+</body>
+</html>
